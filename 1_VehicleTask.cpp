@@ -113,3 +113,8 @@ int main(){
     }
     return 0;
 }
+
+//to execute
+
+//  g++ VehicleTask.cpp
+//  ./a.out
