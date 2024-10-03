@@ -1,7 +1,9 @@
 #include <iostream>
 
-namespace ns {
-    class Rectangle {
+
+//creating a class using namespace
+namespace ns{
+    class Rectangle{
         public :
             double length, width;
             Rectangle(double l, double w) : length(l), width(w) {}
