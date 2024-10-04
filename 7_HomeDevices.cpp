@@ -8,6 +8,7 @@ class Devices{
     public:
         virtual void onConnect(){}
         virtual void onDisconnect(){}
+        virtual ~Devices(){}
 };
 class TemperatureSensor : public Devices{
     private:
@@ -216,7 +217,7 @@ class Door : public Devices{
 };
 
 
-void simulateInput(std::unordered_map<std::string, Devices*>& devices) {
+void simulateInput(unordered_map<string, Devices*>& devices){
     string s;
     string action;
     int points;
@@ -431,27 +432,56 @@ void simulateInput(std::unordered_map<std::string, Devices*>& devices) {
     else{
         cout << "Enter a valid Device";
     }
-
     cout << endl << endl;
 }
 
-void addAutomation(vector<function<void()>>& automations) {
-    string condition, action;
-    cout << "Enter automation (e.g., 'If Temperature > 22.0 Then Fan turnOn'): ";
-    cin.ignore();
-    getline(cin, condition);
-    getline(cin, action);
 
-    // Parse the input and store lambda function in automations based on the condition and action
-    automations.push_back([=]() {
-        // Implement logic for evaluating condition and executing the action
-        cout << "Automation executed: " << condition << " -> " << action << std::endl;
+void setupAutomations(const unordered_map<string, Devices*>& devices, vector<function<void()>>& automations){
+
+    //turning off light and closing door when temp is < 20
+    automations.emplace_back([devices](){
+        TemperatureSensor* temp = dynamic_cast<TemperatureSensor*>(devices.at("TemperatureSensor"));
+        Fan* fan = dynamic_cast<Fan*>(devices.at("Fan"));
+        Door* door = dynamic_cast<Door*>(devices.at("Door"));
+
+        if(temp && fan && door){
+            float currTemp = temp->getTemperature();
+            if(currTemp < 20.0 && fan->getConnection() && door->getConnection()){
+                cout << "[Automation] Temperature less than 20 detected. Turning off the fan and closing the door.\n";
+                fan->turnOff();
+                door->closeDoor();
+            }
+            else if(currTemp > 40.0 && fan->getConnection() && door->getConnection()){
+                cout << "[Automation] Temperature greater than 40 detected. Turning on the fan and opening the door.\n";
+                fan->turnOn();
+                door->openDoor();
+            }
+        }
+    });
+
+
+    //turning on light when there is motion
+    automations.emplace_back([devices](){
+        MotionSensor* motion = dynamic_cast<MotionSensor*>(devices.at("MotionSensor"));
+        Light* light = dynamic_cast<Light*>(devices.at("Light"));
+
+        if (motion && light){ 
+            if (motion->getConnection() && light->getConnection()) {
+                cout << "[Automation] Motion detected. Turning on the light.\n";
+                light->turnOn();
+            }
+        }
     });
 }
 
+void executeAutomations(vector<function<void()>>& automations) {
+    for(auto& automation : automations){
+        automation();
+    }
+}
 
 int main(){
-    unordered_map<string, Devices*> devices; //initializing classes it is always safe to denote it as a pointer
+    unordered_map<string, Devices*> devices; //initializing classes - it is always safe to denote it as a pointer
     devices["TemperatureSensor"] = new TemperatureSensor();
     devices["MotionSensor"] = new MotionSensor();
     devices["WaterSensor"] = new WaterSensor();
@@ -460,7 +490,9 @@ int main(){
     devices["Light"] = new Light();
     devices["Door"] = new Door();
 
-    vector <function<void()>> automations;
+    vector<function<void()>> automations;
+    setupAutomations(devices, automations);
+
     int choice;
     while(true){
         cout << "1. Simulate Input \n2. Device Automation \n";
@@ -469,12 +501,16 @@ int main(){
         {
             case 1:
                 simulateInput(devices);
+                executeAutomations(automations);
                 break;
-            case 2:
-                addAutomation(automations);
-                for(auto& automation : automations){
-                    automation();
+            case 2: 
+                executeAutomations(automations);
+                break;
+            case 3:
+                for(auto& pair: devices){
+                    delete pair.second;
                 }
+                cout << "Exiting the program.";
                 break;
             default:
                 break;
