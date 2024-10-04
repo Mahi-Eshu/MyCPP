@@ -437,7 +437,7 @@ void simulateInput(unordered_map<string, Devices*>& devices){
 
 
 void setupAutomations(const unordered_map<string, Devices*>& devices, vector<function<void()>>& automations){
-
+    
     //turning off light and closing door when temp is < 20
     automations.emplace_back([devices](){
         TemperatureSensor* temp = dynamic_cast<TemperatureSensor*>(devices.at("TemperatureSensor"));
@@ -473,7 +473,6 @@ void setupAutomations(const unordered_map<string, Devices*>& devices, vector<fun
         }
     });
 }
-
 void executeAutomations(vector<function<void()>>& automations) {
     for(auto& automation : automations){
         automation();
